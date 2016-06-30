@@ -24,6 +24,7 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
     private String payload;
     private long executionDelay;
     private TimeUnit executionDelayTimeUnit;
+    private String body;
 
     public HttpWebHookRequest() {
     }
@@ -92,7 +93,7 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
             @Override
             public void run() {
                 HttpRequest httpRequest = new HttpRequest()
-                        .withBody(payload)
+                        .withBody(getResponseBody())
                         .withHeader("Content-type", "application/json")
                         .withMethod("POST")
                         .withPath(path == null ? "/" : path);
@@ -102,5 +103,13 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
                 System.out.println("received response: " + response.getBodyAsString());
             }
         };
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+    
+    public String getResponseBody() {
+        return body == null ? payload : body;
     }
 }

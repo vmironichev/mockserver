@@ -1,7 +1,6 @@
 package org.mockserver.mock.action;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,61 +35,56 @@ public class HttpWebHookActionHandler extends HttpResponseActionHandler {
         return httpWebHook.getHttpResponse().shallowClone();
     }
 
-    private List<HttpWebHookRequest> applyFieldValuePolicies(HttpRequest httpRequest,
-            List<ResponsePayloadFieldValuePolicy> valuePolicies, List<HttpWebHookRequest> webHookRequests) {
+    private void applyFieldValuePolicies(HttpRequest httpRequest, List<ResponsePayloadFieldValuePolicy> valuePolicies,
+            List<HttpWebHookRequest> webHookRequests) {
 
         String requestBody = httpRequest.getBodyAsString();
 
-        List<HttpWebHookRequest> webHooks = new ArrayList<HttpWebHookRequest>();
+        for (HttpWebHookRequest request : webHookRequests) {
 
-        for (ResponsePayloadFieldValuePolicy policy : valuePolicies) {
-            String strategy = policy.getPopulateStrategy();
-            String fieldName = policy.getFieldName();
-            String fieldType = policy.getFieldType();
+            String requestPayload = request.getPayload();
+            String body = requestPayload;
 
-            String escapedFieldName = "\\$\\{" + fieldName + "\\}";
-
-            switch (strategy) {
-            case "distribute_from_request":
-
-                if ("decimal".equals(fieldType)) {
-                    String fieldValue = getFieldValue(requestBody, fieldName);
-                    if (fieldValue != null) {
-                        BigDecimal decimalValue = null;
-                        try {
-                            decimalValue = new BigDecimal(fieldValue);
-                            for (HttpWebHookRequest request : webHookRequests) {
-                                String requestPayload = request.getPayload();
-                                String unescapedFieldName = StringEscapeUtils.unescapeJava(escapedFieldName);
-                                int count = countFieldOccurences(unescapedFieldName, requestPayload);
-                                if (count > 0) {
-                                    String payload = requestPayload.replace(unescapedFieldName,
-                                            decimalValue.divide(new BigDecimal(count)).toString());
-                                    request.setPayload(payload);
+            for (ResponsePayloadFieldValuePolicy policy : valuePolicies) {
+                String strategy = policy.getPopulateStrategy();
+                String fieldName = policy.getFieldName();
+                String fieldType = policy.getFieldType();
+                String escapedFieldName = "\\$\\{" + fieldName + "\\}";
+                if (requestPayload.contains(fieldName)) {
+                    switch (strategy) {
+                    case "distribute_from_request":
+                        if ("decimal".equals(fieldType)) {
+                            String fieldValue = getFieldValue(requestBody, fieldName);
+                            if (fieldValue != null) {
+                                BigDecimal decimalValue = null;
+                                try {
+                                    decimalValue = new BigDecimal(fieldValue);
+                                    String unescapedFieldName = StringEscapeUtils.unescapeJava(escapedFieldName);
+                                    int count = countFieldOccurences(unescapedFieldName, requestPayload);
+                                    if (count > 0) {
+                                        String newValue = decimalValue.divide(new BigDecimal(count)).toString();
+                                        while (body.contains(StringEscapeUtils.unescapeJava(escapedFieldName))) {
+                                            body = body.replaceFirst(escapedFieldName, newValue);
+                                        }
+                                        request.setBody(body);
+                                    }
+                                } catch (NumberFormatException e) {
                                 }
                             }
-                        } catch (NumberFormatException e) {
                         }
+                        break;
+                    case "auto":
+                        if ("uuid4".equals(fieldType)) {
+                            while (body.contains(StringEscapeUtils.unescapeJava(escapedFieldName))) {
+                                body = body.replaceFirst(escapedFieldName, UUID.randomUUID().toString().replace("-", ""));
+                            }
+                            request.setBody(body);
+                        }
+                        break;
                     }
                 }
-                break;
-            case "auto":
-
-                if ("uuid4".equals(fieldType)) {
-                    for (HttpWebHookRequest request : webHookRequests) {
-                        String requestPayload = request.getPayload();
-                        String payload = requestPayload.replaceFirst(escapedFieldName,
-                                UUID.randomUUID().toString().replace("-", ""));
-                        request.setPayload(payload);
-                    }
-                }
-                break;
-            default:
-                break;
             }
         }
-
-        return webHooks;
     }
 
     private String getFieldValue(String requestBody, String fieldName) {
