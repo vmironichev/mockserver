@@ -23,7 +23,7 @@ public class HttpWebHookActionHandler extends HttpResponseActionHandler {
             List<ResponsePayloadFieldValuePolicy> valuePolicies = webHookConfig.getResponsePayloadFieldValuePolicies();
             for (HttpWebHookRequest webHookRequest : requests) {
                 webHookRequest.setBody(webHookRequest.getPayload());
-                applyFieldValuePolicies(requestBody, valuePolicies, webHookRequest);
+                applyFieldValuePolicies(requestBody, valuePolicies, webHookRequest, getAggregatedPayloadTemplate(requests));
                 webHookRequest.submit();
             }
         }
@@ -31,12 +31,20 @@ public class HttpWebHookActionHandler extends HttpResponseActionHandler {
     }
 
     private void applyFieldValuePolicies(String requestBody, List<ResponsePayloadFieldValuePolicy> valuePolicies,
-            HttpWebHookRequest webHookRequest) {
+            HttpWebHookRequest webHookRequest, String aggregatedWebHooksPayloadTemplate) {
         if (valuePolicies != null) {
             for (ResponsePayloadFieldValuePolicy policy : valuePolicies) {
-                policy.apply(requestBody, webHookRequest);
+                policy.apply(requestBody, webHookRequest, aggregatedWebHooksPayloadTemplate);
             }
         }
+    }
+
+    private String getAggregatedPayloadTemplate(List<HttpWebHookRequest> webHookRequests) {
+        StringBuilder aggregatedPayloadTemplateBuilder = new StringBuilder();
+        for (HttpWebHookRequest request : webHookRequests) {
+            aggregatedPayloadTemplateBuilder.append(request.getPayload());
+        }
+        return aggregatedPayloadTemplateBuilder.toString();
     }
 
 }

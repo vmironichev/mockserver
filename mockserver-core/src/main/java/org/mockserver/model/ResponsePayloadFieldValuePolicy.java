@@ -44,7 +44,7 @@ public class ResponsePayloadFieldValuePolicy extends ObjectWithReflectiveEqualsH
         this.populateStrategy = populateStrategy;
     }
 
-    public void apply(String requestBody, HttpWebHookRequest webHook) {
+    public void apply(String requestBody, HttpWebHookRequest webHook, String aggregatedWebHooksPayloadTemplate) {
 
         String webHookPayloadTemplate = webHook.getPayload();
         String body = webHook.getResponseBody();
@@ -65,7 +65,7 @@ public class ResponsePayloadFieldValuePolicy extends ObjectWithReflectiveEqualsH
                 if ("decimal".equals(fieldType)) {
                     String fieldValue = getJsonAttributeValue(requestBody, fieldName);
                     if (isNumeric(fieldValue)) {
-                        int count = countFieldOccurences(StringEscapeUtils.unescapeJava(escapedFieldName), webHookPayloadTemplate);
+                        int count = countFieldOccurences(StringEscapeUtils.unescapeJava(escapedFieldName), aggregatedWebHooksPayloadTemplate);
                         if (count > 0) {
                             body = populateDecimalValue(body, escapedFieldName, fieldValue, count);
                             webHook.setBody(body);
@@ -90,8 +90,7 @@ public class ResponsePayloadFieldValuePolicy extends ObjectWithReflectiveEqualsH
 
     private String populateDecimalValue(String body, String escapedFieldName, String fieldValue, int count) {
 
-        BigDecimal newValue = new BigDecimal(fieldValue).divide(new BigDecimal(count)).setScale(2,
-                RoundingMode.HALF_UP);
+        BigDecimal newValue = new BigDecimal(fieldValue).divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
         while (body.contains(StringEscapeUtils.unescapeJava(escapedFieldName))) {
             body = body.replaceFirst(escapedFieldName, newValue.toString());
         }
