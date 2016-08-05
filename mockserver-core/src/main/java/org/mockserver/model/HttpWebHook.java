@@ -24,8 +24,8 @@ public class HttpWebHook extends Action {
         this.httpWebHookConfig = httpWebHookConfig;
     }
 
-    public HttpWebHook withHttpWebHookConfig(HttpWebHookConfig callbackConfig) {
-        this.httpWebHookConfig = callbackConfig;
+    public HttpWebHook withHttpWebHookConfig(HttpWebHookConfig httpWebHookConfig) {
+        this.httpWebHookConfig = httpWebHookConfig;
         return this;
     }
 
