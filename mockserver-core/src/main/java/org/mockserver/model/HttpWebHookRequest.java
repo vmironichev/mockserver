@@ -23,8 +23,7 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String APPLICATION_JSON = "application/json";
 
-    private final Logger logger = LoggerFactory.getLogger(HttpWebHookRequest.class);
-    private final LogFormatter logFormatter = new LogFormatter(logger);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpWebHookRequest.class);
     private static ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private String host;
     private Integer port;
@@ -93,7 +92,7 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
     }
 
     public void submit() {
-        logFormatter.infoLog("Scheduling web hook for execution {}", this);
+        LOGGER.info("Scheduling web hook for execution {}", this);
         executorService.schedule(webHookRequest(), getExecutionDelay(), getExecutionDelayTimeUnit());
     }
 
@@ -137,8 +136,8 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
             response.append(inputLine);
         }
         in.close();
-        System.out.println(response.toString());
-        logFormatter.infoLog("Web hook executed, response recevied: {}" + System.getProperty("line.separator") + " for request:{}", response, httpRequest);
+        System.out.println("DEBUG: received web hook response " + response.toString());
+        LOGGER.info("Web hook executed, response recevied: {}" + System.getProperty("line.separator") + " for request:{}", response, httpRequest);
     }
 
     private HttpURLConnection createRequest() throws IOException, AuthenticationException {
