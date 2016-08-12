@@ -112,12 +112,12 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
                     String responseBody = getResponseBody();
                     if (responseBody != null) {
                         byte[] data = responseBody.getBytes("UTF-8");
-                        httpRequest.setRequestMethod(POST);
                         httpRequest.setFixedLengthStreamingMode(data.length);
                         httpRequest.setDoOutput(true);
                         httpRequest.getOutputStream().write(data);
+                    } else {
+                        httpRequest.connect();
                     }
-                    httpRequest.connect();
                     handleResponse(httpRequest);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -146,6 +146,9 @@ public class HttpWebHookRequest extends ObjectWithReflectiveEqualsHashCodeToStri
         HttpURLConnection httpRequest = (HttpURLConnection) url.openConnection();
         httpRequest.setRequestProperty(ACCEPT, APPLICATION_JSON);
         httpRequest.setRequestProperty(CONTENT_TYPE, APPLICATION_JSON);
+        if (getResponseBody() != null) {
+            httpRequest.setRequestMethod(POST);
+        }
         return httpRequest;
     }
 
